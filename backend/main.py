@@ -26,6 +26,11 @@ app.include_router(property.router, prefix="/api", tags=["Property Pipeline"])
 app.include_router(payments.router, prefix="/api", tags=["Payments"])
 
 
+@app.get("/", tags=["Root"])
+async def root():
+    return {"message": "PropCopy AI API is running 🚀", "docs": "/docs", "health": "/health"}
+
+
 @app.get("/health", tags=["Health"])
 async def health_check():
     return {"status": "ok", "service": "PropCopy AI API"}
