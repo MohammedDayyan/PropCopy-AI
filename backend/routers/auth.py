@@ -1,10 +1,24 @@
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel, EmailStr, Field
 from middleware.auth_middleware import get_current_user
-from services.supabase_service import initialize_user_credits, get_user_credits
+from services.supabase_service import (
+    create_confirmed_auth_user,
+    initialize_user_credits,
+    get_user_credits,
+)
 from datetime import datetime, timezone
 
 router = APIRouter()
 
+class SignupRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+
+
+@router.post("/auth/signup")
+async def signup(payload: SignupRequest):
+    user = await create_confirmed_auth_user(payload.email, payload.password)
+    return {"success": True, "user": user}
 
 @router.post("/user/init")
 async def init_user(current_user: dict = Depends(get_current_user)):

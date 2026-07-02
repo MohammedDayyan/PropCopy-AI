@@ -11,6 +11,41 @@ def get_supabase_admin() -> Client:
     return create_client(settings.supabase_url, settings.supabase_service_role_key)
 
 
+async def create_confirmed_auth_user(email: str, password: str) -> dict:
+    """
+    Creates a Supabase Auth user without sending a confirmation email.
+    This avoids Supabase's shared email rate limit during signup.
+    """
+    client = get_supabase_admin()
+    normalized_email = email.strip().lower()
+
+    try:
+        result = client.auth.admin.create_user(
+            {
+                "email": normalized_email,
+                "password": password,
+                "email_confirm": True,
+            }
+        )
+    except Exception as exc:
+        message = str(exc)
+        if "already" in message.lower() or "registered" in message.lower():
+            raise HTTPException(status_code=409, detail="An account with this email already exists")
+        raise HTTPException(status_code=400, detail=message)
+
+    user = getattr(result, "user", None)
+    if not user:
+        raise HTTPException(status_code=500, detail="Failed to create account")
+
+    user_id = getattr(user, "id", None)
+    if not user_id:
+        raise HTTPException(status_code=500, detail="Created account is missing a user ID")
+
+    await initialize_user_credits(user_id)
+    return {"user_id": user_id, "email": normalized_email}
+
+
+
 # ─── User Credits ────────────────────────────────────────────────────────────
 
 async def initialize_user_credits(user_id: str) -> dict:

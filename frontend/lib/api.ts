@@ -13,7 +13,25 @@ async function getAuthHeaders(): Promise<HeadersInit> {
     "Content-Type": "application/json",
   };
 }
+export async function signupUser(payload: {
+  email: string;
+  password: string;
+}) {
+  const res = await fetch(`${BACKEND_URL}/api/auth/signup`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
 
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to create account");
+  }
+
+  return res.json();
+}
 // ── API Calls ────────────────────────────────────────────────────────────────
 
 export async function initUser() {

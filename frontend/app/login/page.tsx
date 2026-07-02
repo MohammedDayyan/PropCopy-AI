@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
-import { initUser } from "@/lib/api";
+import { initUser, signupUser } from "@/lib/api";
 import { Building2, Mail, Lock, LogIn, UserPlus } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,27 +27,20 @@ export default function LoginPage() {
 
     try {
       if (isSignUp) {
-        // Sign Up Flow
-        const { data, error } = await supabase.auth.signUp({
-          email,
-          password,
-        });
+  await signupUser({ email, password });
 
-        if (error) throw error;
+  const { data, error } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
 
-        if (data?.user) {
-          // Initialize credits for the new user
-          try {
-            await initUser();
-          } catch (initErr) {
-            console.error("Failed to initialize user credits:", initErr);
-          }
-          toast.success("Account created successfully! Welcome to PropCopy AI.", { id: toastId });
-          router.push("/dashboard");
-        } else {
-          toast.success("Check your email for a verification link!", { id: toastId });
-        }
-      } else {
+  if (error) throw error;
+
+  if (data?.user) {
+    toast.success("Account created successfully! Welcome to PropCopy AI.", { id: toastId });
+    router.push("/dashboard");
+  }
+} else {
         // Sign In Flow
         const { data, error } = await supabase.auth.signInWithPassword({
           email,
