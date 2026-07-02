@@ -95,6 +95,7 @@ async def process_property(
         raise HTTPException(status_code=500, detail=f"Creative generation failed: {str(e)}")
 
     # ── Step 5: Save Marketing Assets ─────────────────────────────────────────
+    assets["logo_storage_path"] = request.logo_path
     await save_marketing_assets(property_id, assets)
 
     # ── Step 6: Return Results ────────────────────────────────────────────────
