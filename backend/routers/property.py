@@ -134,7 +134,7 @@ class UpdatePropertyRequest(BaseModel):
     email_blast: str | None = None
     facebook_ad: str | None = None
 
-
+ 
 @router.put("/properties/{property_id}")
 async def update_property(
     property_id: str,
