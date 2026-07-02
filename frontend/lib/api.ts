@@ -68,6 +68,9 @@ export async function fetchCredits() {
 export async function processProperty(payload: {
   image_paths: string[];
   raw_bullet_points: string;
+  creative_type?: "all" | "instagram" | "email" | "banner";
+  company_name?: string;
+  logo_path?: string;
 }) {
   const headers = await getAuthHeaders();
   const res = await fetch(`${BACKEND_URL}/api/process-property`, {
@@ -183,5 +186,20 @@ export async function uploadImageToSupabase(
     .upload(path, file, { cacheControl: "3600", upsert: false });
 
   if (error) throw new Error(`Upload failed: ${error.message}`);
+  return path;
+}
+export async function uploadBrandAssetToSupabase(
+  file: File,
+  userId: string
+): Promise<string> {
+  const timestamp = Date.now();
+  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_");
+  const path = `${userId}/${timestamp}_${safeName}`;
+
+  const { error } = await supabase.storage
+    .from("brand-assets")
+    .upload(path, file, { cacheControl: "3600", upsert: false });
+
+  if (error) throw new Error(`Logo upload failed: ${error.message}`);
   return path;
 }

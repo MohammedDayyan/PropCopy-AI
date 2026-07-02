@@ -7,7 +7,7 @@ import ImageUploadZone from "@/components/ImageUploadZone";
 import ResultsDashboard from "@/components/ResultsDashboard";
 import TrialBanner from "@/components/TrialBanner";
 import { supabase } from "@/lib/supabaseClient";
-import { processProperty, uploadImageToSupabase, fetchCredits } from "@/lib/api";
+import { processProperty, uploadImageToSupabase, uploadBrandAssetToSupabase, fetchCredits } from "@/lib/api";
 import { Building2, Sparkles, Wand2, Loader2, CheckCircle2, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -22,6 +22,9 @@ export default function GeneratePage() {
   const [generating, setGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>("");
   const [results, setResults] = useState<any>(null);
+  const [creativeType, setCreativeType] = useState<"all" | "instagram" | "email" | "banner">("all");
+const [companyName, setCompanyName] = useState("");
+const [logoFile, setLogoFile] = useState<File | null>(null);
 
   useEffect(() => {
     // Check authentication
@@ -73,13 +76,22 @@ export default function GeneratePage() {
         const path = await uploadImageToSupabase(file, user.id);
         uploadedPaths.push(path);
       }
+      
+      let logoPath: string | undefined;
 
+if (logoFile) {
+  setGenerationStep("Uploading company logo...");
+  logoPath = await uploadBrandAssetToSupabase(logoFile, user.id);
+}
       // Step 2: Processing property through backend pipeline
       setGenerationStep("Analyzing images via Groq Vision API & Synthesizing copies...");
       const res = await processProperty({
-        image_paths: uploadedPaths,
-        raw_bullet_points: bulletPoints,
-      });
+  image_paths: uploadedPaths,
+  raw_bullet_points: bulletPoints,
+  creative_type: creativeType,
+  company_name: companyName,
+  logo_path: logoPath,
+});
 
       setResults(res);
       toast.success("Marketing copy generated successfully!");
@@ -189,7 +201,44 @@ export default function GeneratePage() {
               <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "16px" }}>1. Upload Property Images</h3>
               <ImageUploadZone files={files} onFilesChange={setFiles} maxFiles={5} />
             </div>
+            <div className="card" style={{ padding: "24px", background: "var(--surface)" }}>
+  <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "16px" }}>
+    Creative Type
+  </h3>
 
+  <div className="tab-list" style={{ marginBottom: 16 }}>
+    {[
+      ["all", "All"],
+      ["instagram", "Instagram"],
+      ["email", "Email"],
+      ["banner", "Banner/Poster"],
+    ].map(([id, label]) => (
+      <button
+        key={id}
+        type="button"
+        className={`tab-item ${creativeType === id ? "active" : ""}`}
+        onClick={() => setCreativeType(id as any)}
+      >
+        {label}
+      </button>
+    ))}
+  </div>
+
+  <input
+    className="input"
+    placeholder="Company name"
+    value={companyName}
+    onChange={(e) => setCompanyName(e.target.value)}
+    style={{ marginBottom: 12 }}
+  />
+
+  <input
+    className="input"
+    type="file"
+    accept="image/*"
+    onChange={(e) => setLogoFile(e.target.files?.[0] || null)}
+  />
+</div>
             {/* Step 2: Details */}
             <div className="card" style={{ padding: "24px", background: "var(--surface)" }}>
               <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "6px" }}>2. Tell Us About the Listing</h3>

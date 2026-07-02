@@ -10,7 +10,7 @@ from services.supabase_service import (
     get_property_with_assets,
     update_property_listing,
 )
-from services.groq_service import analyze_all_images, synthesize_marketing_copy
+from services.groq_service import analyze_all_images, synthesize_marketing_copy, synthesize_creative_assets
 from config import get_settings
 
 settings = get_settings()
@@ -19,7 +19,10 @@ router = APIRouter()
 
 class ProcessPropertyRequest(BaseModel):
     image_paths: list[str]       # Supabase storage paths e.g. "user_id/property_id/img1.jpg"
-    raw_bullet_points: str       # Agent's raw notes
+    raw_bullet_points: str
+    creative_type: str = "all"  # all | instagram | email | banner
+    company_name: str | None = None
+    logo_path: str | None = None       # Agent's raw notes
 
 
 class ProcessPropertyResponse(BaseModel):
@@ -28,12 +31,18 @@ class ProcessPropertyResponse(BaseModel):
     instagram_script: str
     email_blast: str
     facebook_ad: str
+    creative_brief: str = ""
+    instagram_post: dict = {}
+    banner_poster: dict = {}
+    email_brochure: dict = {}
+    image_urls: list[str] = []
+    logo_url: str | None = None
+    
 
 
-def build_public_url(storage_path: str) -> str:
-    """Converts a Supabase storage path to a public URL."""
+def build_public_url(storage_path: str, bucket: str = "property-images") -> str:
     base = settings.supabase_url.rstrip("/")
-    return f"{base}/storage/v1/object/public/property-images/{storage_path}"
+    return f"{base}/storage/v1/object/public/{bucket}/{storage_path}"
 
 
 @router.post("/process-property", response_model=ProcessPropertyResponse)
@@ -81,6 +90,15 @@ async def process_property(
     # ── Step 4: Synthesize Marketing Copy ────────────────────────────────────
     try:
         assets = await synthesize_marketing_copy(image_analyses, request.raw_bullet_points)
+        creative_assets = await synthesize_creative_assets(
+    image_analyses=image_analyses,
+    raw_description=request.raw_bullet_points,
+    creative_type=request.creative_type,
+    company_name=request.company_name,
+)
+
+        assets.update(creative_assets)
+        assets["logo_storage_path"] = request.logo_path
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Copy generation failed: {str(e)}")
 
@@ -94,6 +112,12 @@ async def process_property(
         instagram_script=assets.get("instagram_script", ""),
         email_blast=assets.get("email_blast", ""),
         facebook_ad=assets.get("facebook_ad", ""),
+        creative_brief=assets.get("creative_brief", ""),
+instagram_post=assets.get("instagram_post", {}),
+banner_poster=assets.get("banner_poster", {}),
+email_brochure=assets.get("email_brochure", {}),
+image_urls=image_urls,
+logo_url=build_public_url(request.logo_path, "brand-assets") if request.logo_path else None,
     )
 
 

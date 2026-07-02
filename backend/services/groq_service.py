@@ -138,3 +138,83 @@ Generate all four marketing assets now. Respond with ONLY the JSON object."""
     import json
     content = response.choices[0].message.content.strip()
     return json.loads(content)
+
+CREATIVE_SYSTEM_PROMPT = """You are a senior social media and brand design copywriter.
+
+Create render-ready Instagram posts, banners/posters, and email brochure content from uploaded photos and user descriptions.
+
+Rules:
+- Put the company logo just above the main text content for Instagram, banner/poster, and email.
+- Instagram should feel like a bold editorial post: photo collage, dark gradient, logo/brand row, large uppercase headline, red/white emphasis.
+- Banner/poster should be wide, polished, image-led, with logo above headline, CTA, and footer note.
+- Email should be brochure-like with hero image, logo above intro, sections, CTA, and signature.
+- Keep copy short enough to fit inside real designs.
+- Return only valid JSON.
+
+JSON shape:
+{
+  "creative_brief": "",
+  "instagram_post": {
+    "brand_handle": "",
+    "headline": "",
+    "highlight": "",
+    "supporting_text": "",
+    "caption": ""
+  },
+  "banner_poster": {
+    "headline": "",
+    "subheadline": "",
+    "cta": "",
+    "footer_note": ""
+  },
+  "email_brochure": {
+    "subject": "",
+    "preheader": "",
+    "intro": "",
+    "sections": [
+      {"title": "", "body": ""}
+    ],
+    "cta": "",
+    "signature": ""
+  }
+}"""
+
+
+async def synthesize_creative_assets(
+    image_analyses: list[str],
+    raw_description: str,
+    creative_type: str,
+    company_name: str | None = None,
+) -> dict:
+    import json
+
+    analyses_text = "\n\n".join(
+        f"--- Image {i + 1} Analysis ---\n{analysis}"
+        for i, analysis in enumerate(image_analyses)
+    )
+
+    brand = company_name.strip() if company_name else "the company"
+
+    user_message = f"""
+Requested creative type: {creative_type}
+Company name: {brand}
+
+USER DESCRIPTION:
+{raw_description}
+
+IMAGE ANALYSIS:
+{analyses_text}
+"""
+
+    response = await groq_client.chat.completions.create(
+        model=TEXT_MODEL,
+        messages=[
+            {"role": "system", "content": CREATIVE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        max_tokens=2048,
+        temperature=0.75,
+        response_format={"type": "json_object"},
+    )
+
+    return json.loads(response.choices[0].message.content.strip())

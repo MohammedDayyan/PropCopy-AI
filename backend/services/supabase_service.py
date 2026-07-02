@@ -168,6 +168,11 @@ async def save_marketing_assets(property_id: str, assets: dict) -> dict:
                 "instagram_script": assets.get("instagram_script", ""),
                 "email_blast": assets.get("email_blast", ""),
                 "facebook_ad": assets.get("facebook_ad", ""),
+                "creative_brief": assets.get("creative_brief", ""),
+"instagram_post": assets.get("instagram_post", {}),
+"banner_poster": assets.get("banner_poster", {}),
+"email_brochure": assets.get("email_brochure", {}),
+"logo_storage_path": assets.get("logo_storage_path"),
             }
         )
         .execute()
