@@ -68,7 +68,7 @@ export async function fetchCredits() {
 export async function processProperty(payload: {
   image_paths: string[];
   raw_bullet_points: string;
-  creative_type?: "all" | "instagram" | "email" | "banner";
+  creative_type: "instagram" | "banner" | "email";
   company_name?: string;
   logo_path?: string;
 }) {
@@ -188,6 +188,7 @@ export async function uploadImageToSupabase(
   if (error) throw new Error(`Upload failed: ${error.message}`);
   return path;
 }
+
 export async function uploadBrandAssetToSupabase(
   file: File,
   userId: string

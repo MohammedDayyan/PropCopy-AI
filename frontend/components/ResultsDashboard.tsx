@@ -1,128 +1,303 @@
 "use client";
 
+import { Copy, Check, Instagram, Mail, PanelTop } from "lucide-react";
 import { useState } from "react";
-import { Copy, Check, FileText, Video, Mail, Megaphone } from "lucide-react";
 import toast from "react-hot-toast";
 
-interface MarketingAssets {
-  mls_description: string;
-  instagram_script: string;
-  email_blast: string;
-  facebook_ad: string;
-}
-
 interface ResultsDashboardProps {
-  assets: MarketingAssets;
+  assets: any;
 }
-
-type TabType = "mls" | "instagram" | "email" | "facebook";
 
 export default function ResultsDashboard({ assets }: ResultsDashboardProps) {
-  const [activeTab, setActiveTab] = useState<TabType>("mls");
-  const [copiedText, setCopiedText] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
 
-  const copyToClipboard = async (text: string, tab: TabType) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedText(tab);
-      toast.success("Copied to clipboard!");
-      setTimeout(() => setCopiedText(null), 2000);
-    } catch (err) {
-      toast.error("Failed to copy text");
-    }
+  const primaryImage = assets.image_urls?.[0];
+  const secondImage = assets.image_urls?.[1] || primaryImage;
+  const logoUrl = assets.logo_url;
+  const type = assets.creative_type;
+
+  const copyText = async () => {
+    const text = JSON.stringify(assets, null, 2);
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    toast.success("Copied");
+    setTimeout(() => setCopied(false), 1500);
   };
 
-  const tabs = [
-    { id: "mls" as TabType, label: "MLS listing", icon: FileText, content: assets.mls_description },
-    { id: "instagram" as TabType, label: "Instagram Reels/Post", icon: Video, content: assets.instagram_script },
-    { id: "email" as TabType, label: "Email Blast", icon: Mail, content: assets.email_blast },
-    { id: "facebook" as TabType, label: "Facebook/Meta Ad", icon: Megaphone, content: assets.facebook_ad },
-  ];
-
-  const activeContent = tabs.find((t) => t.id === activeTab)?.content || "";
-
   return (
-    <div className="card accent-glow overflow-hidden animate-fade-in-up" style={{ animationDelay: "100ms" }}>
-      {/* Tabs list */}
-      <div className="tab-list" style={{ margin: "16px" }}>
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`tab-item ${isActive ? "active" : ""}`}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "6px",
-              }}
-            >
-              <Icon size={14} />
-              <span className="hidden sm:inline">{tab.label}</span>
-            </button>
-          );
-        })}
+    <div className="card accent-glow" style={{ padding: 20 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+        <strong style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          {type === "instagram" && <Instagram size={18} />}
+          {type === "banner" && <PanelTop size={18} />}
+          {type === "email" && <Mail size={18} />}
+          Generated {type}
+        </strong>
+
+        <button className="btn-secondary" onClick={copyText}>
+          {copied ? <Check size={14} /> : <Copy size={14} />}
+          Copy Text
+        </button>
       </div>
 
-      <div style={{ padding: "0 24px 24px 24px" }}>
-        <div
+      {type === "instagram" && (
+        <InstagramReelPreview
+          imageUrl={primaryImage}
+          secondImageUrl={secondImage}
+          logoUrl={logoUrl}
+          reel={assets.instagram_reel}
+        />
+      )}
+
+      {type === "banner" && (
+        <BannerPreview
+          imageUrl={primaryImage}
+          logoUrl={logoUrl}
+          banner={assets.banner_poster}
+        />
+      )}
+
+      {type === "email" && (
+        <EmailPreview
+          imageUrl={primaryImage}
+          logoUrl={logoUrl}
+          email={assets.email_brochure}
+        />
+      )}
+    </div>
+  );
+}
+
+function LogoBlock({ logoUrl }: { logoUrl?: string }) {
+  if (!logoUrl) return null;
+
+  return (
+    <img
+      src={logoUrl}
+      alt="Company logo"
+      style={{
+        width: 44,
+        height: 44,
+        borderRadius: "50%",
+        objectFit: "cover",
+        border: "2px solid rgba(255,255,255,0.8)",
+        marginBottom: 8,
+      }}
+    />
+  );
+}
+
+function InstagramReelPreview({
+  imageUrl,
+  secondImageUrl,
+  logoUrl,
+  reel,
+}: {
+  imageUrl?: string;
+  secondImageUrl?: string;
+  logoUrl?: string;
+  reel: any;
+}) {
+  return (
+    <div
+      style={{
+        width: "100%",
+        maxWidth: 430,
+        aspectRatio: "9 / 16",
+        margin: "0 auto",
+        borderRadius: 8,
+        overflow: "hidden",
+        position: "relative",
+        background: "#050505",
+        border: "1px solid var(--border)",
+      }}
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "58%" }}>
+        <img src={imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img src={secondImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.45) 55%, #000 76%)",
+        }}
+      />
+
+      <div
+        style={{
+          position: "absolute",
+          left: 18,
+          right: 18,
+          bottom: 24,
+          textAlign: "center",
+          color: "white",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          <LogoBlock logoUrl={logoUrl} />
+        </div>
+
+        <div style={{ fontSize: 12, fontWeight: 700, marginBottom: 8 }}>
+          {reel?.brand_handle || "@brand"}
+        </div>
+
+        <h2
           style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "12px",
+            fontSize: "clamp(24px, 7vw, 38px)",
+            lineHeight: 0.95,
+            fontWeight: 950,
+            textTransform: "uppercase",
+            marginBottom: 8,
           }}
         >
-          <span style={{ fontSize: "12px", color: "var(--muted)", fontWeight: 600, textTransform: "uppercase" }}>
-            Generated Output ({activeTab})
-          </span>
-          <button
-            onClick={() => copyToClipboard(activeContent, activeTab)}
-            className="btn-secondary"
-            style={{
-              padding: "6px 12px",
-              fontSize: "12px",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-            }}
-          >
-            {copiedText === activeTab ? (
-              <>
-                <Check size={14} color="var(--success)" />
-                Copied!
-              </>
-            ) : (
-              <>
-                <Copy size={14} />
-                Copy Copy
-              </>
-            )}
-          </button>
-        </div>
+          {reel?.headline}
+        </h2>
 
         <div
           style={{
-            background: "var(--surface-2)",
-            border: "1px solid var(--border)",
-            borderRadius: "var(--radius)",
-            padding: "20px",
-            fontSize: "14px",
-            lineHeight: "1.7",
-            minHeight: "220px",
-            whiteSpace: "pre-wrap",
-            fontFamily: "inherit",
+            color: "#ff2a2a",
+            fontSize: "clamp(20px, 6vw, 32px)",
+            lineHeight: 1,
+            fontWeight: 950,
+            textTransform: "uppercase",
+            marginBottom: 8,
           }}
         >
-          {activeContent || (
-            <span style={{ color: "var(--muted)", fontStyle: "italic" }}>
-              No content generated for this tab.
-            </span>
-          )}
+          {reel?.highlight}
         </div>
+
+        <p style={{ fontSize: 16, fontWeight: 800, textTransform: "uppercase" }}>
+          {reel?.supporting_text}
+        </p>
+      </div>
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          border: "1px solid rgba(255,255,255,0.16)",
+          pointerEvents: "none",
+        }}
+      />
+    </div>
+  );
+}
+
+function BannerPreview({
+  imageUrl,
+  logoUrl,
+  banner,
+}: {
+  imageUrl?: string;
+  logoUrl?: string;
+  banner: any;
+}) {
+  return (
+    <div
+      style={{
+        aspectRatio: "16 / 7",
+        borderRadius: 8,
+        overflow: "hidden",
+        position: "relative",
+        background: "#050505",
+      }}
+    >
+      <img src={imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+
+      <div
+        style={{
+          position: "absolute",
+          inset: 0,
+          background: "linear-gradient(90deg, rgba(0,0,0,0.85), rgba(0,0,0,0.25))",
+        }}
+      />
+
+      <div style={{ position: "absolute", left: 32, top: 32, bottom: 32, maxWidth: 480, color: "white" }}>
+        <LogoBlock logoUrl={logoUrl} />
+
+        <h2 style={{ fontSize: 42, lineHeight: 1, fontWeight: 900, marginBottom: 12 }}>
+          {banner?.headline}
+        </h2>
+
+        <p style={{ fontSize: 18, marginBottom: 20 }}>{banner?.subheadline}</p>
+
+        <button className="btn-primary">{banner?.cta || "Learn More"}</button>
+
+        <p style={{ fontSize: 12, opacity: 0.75, marginTop: 18 }}>{banner?.footer_note}</p>
+      </div>
+    </div>
+  );
+}
+
+function EmailPreview({
+  imageUrl,
+  logoUrl,
+  email,
+}: {
+  imageUrl?: string;
+  logoUrl?: string;
+  email: any;
+}) {
+  return (
+    <div
+      style={{
+        maxWidth: 680,
+        margin: "0 auto",
+        background: "#ffffff",
+        color: "#111827",
+        borderRadius: 8,
+        overflow: "hidden",
+      }}
+    >
+      <img src={imageUrl} alt="" style={{ width: "100%", height: 260, objectFit: "cover" }} />
+
+      <div style={{ padding: 28 }}>
+        {logoUrl && (
+          <img
+            src={logoUrl}
+            alt="Company logo"
+            style={{ width: 54, height: 54, objectFit: "cover", borderRadius: "50%", marginBottom: 14 }}
+          />
+        )}
+
+        <div style={{ fontSize: 13, color: "#6b7280", marginBottom: 8 }}>
+          {email?.preheader}
+        </div>
+
+        <h2 style={{ fontSize: 28, lineHeight: 1.15, marginBottom: 12 }}>
+          {email?.subject}
+        </h2>
+
+        <p style={{ fontSize: 15, lineHeight: 1.7, marginBottom: 22 }}>
+          {email?.intro}
+        </p>
+
+        {(email?.sections || []).map((section: any, index: number) => (
+          <div key={index} style={{ borderTop: "1px solid #e5e7eb", paddingTop: 16, marginTop: 16 }}>
+            <h3 style={{ fontSize: 17, marginBottom: 6 }}>{section.title}</h3>
+            <p style={{ fontSize: 14, lineHeight: 1.7, color: "#374151" }}>{section.body}</p>
+          </div>
+        ))}
+
+        <button
+          style={{
+            marginTop: 24,
+            background: "#111827",
+            color: "white",
+            border: "none",
+            borderRadius: 6,
+            padding: "12px 18px",
+            fontWeight: 800,
+          }}
+        >
+          {email?.cta || "Contact Us"}
+        </button>
+
+        <p style={{ marginTop: 20, fontSize: 13, color: "#6b7280" }}>
+          {email?.signature}
+        </p>
       </div>
     </div>
   );

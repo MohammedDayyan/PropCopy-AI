@@ -218,3 +218,110 @@ IMAGE ANALYSIS:
     )
 
     return json.loads(response.choices[0].message.content.strip())
+
+CREATIVE_SYSTEM_PROMPT = """You are a senior visual marketing copywriter.
+
+The user will choose ONE creative type: instagram, banner, or email.
+
+Return content ONLY for the selected creative type.
+Do not generate other formats.
+
+Rules for Instagram:
+- Create text for a bold Instagram reel/post cover.
+- Style should feel like a viral editorial post: strong headline, short quote/highlight, punchy supporting line.
+- Text must be short enough to fit inside a 9:16 reel cover.
+- The frontend will place the company logo just above the main text.
+
+Rules for Banner:
+- Create a wide banner/poster headline, subheadline, CTA, and footer note.
+- Logo will appear just above the main text.
+
+Rules for Email:
+- Create brochure-style email content with sections.
+- Logo will appear above the intro.
+
+Return ONLY valid JSON.
+
+For instagram:
+{
+  "creative_type": "instagram",
+  "creative_brief": "",
+  "instagram_reel": {
+    "brand_handle": "",
+    "headline": "",
+    "highlight": "",
+    "supporting_text": "",
+    "caption": ""
+  }
+}
+
+For banner:
+{
+  "creative_type": "banner",
+  "creative_brief": "",
+  "banner_poster": {
+    "headline": "",
+    "subheadline": "",
+    "cta": "",
+    "footer_note": ""
+  }
+}
+
+For email:
+{
+  "creative_type": "email",
+  "creative_brief": "",
+  "email_brochure": {
+    "subject": "",
+    "preheader": "",
+    "intro": "",
+    "sections": [
+      {"title": "", "body": ""}
+    ],
+    "cta": "",
+    "signature": ""
+  }
+}
+"""
+
+
+async def synthesize_creative_assets(
+    image_analyses: list[str],
+    raw_description: str,
+    creative_type: str,
+    company_name: str | None = None,
+) -> dict:
+    import json
+
+    analyses_text = "\n\n".join(
+        f"--- Image {i + 1} Analysis ---\n{analysis}"
+        for i, analysis in enumerate(image_analyses)
+    )
+
+    brand = company_name.strip() if company_name else "the company"
+
+    user_message = f"""
+Generate ONLY this creative type: {creative_type}
+
+Company name:
+{brand}
+
+User description:
+{raw_description}
+
+Image analysis:
+{analyses_text}
+"""
+
+    response = await groq_client.chat.completions.create(
+        model=TEXT_MODEL,
+        messages=[
+            {"role": "system", "content": CREATIVE_SYSTEM_PROMPT},
+            {"role": "user", "content": user_message},
+        ],
+        max_tokens=1200,
+        temperature=0.75,
+        response_format={"type": "json_object"},
+    )
+
+    return json.loads(response.choices[0].message.content.strip())

@@ -10,7 +10,7 @@ from services.supabase_service import (
     get_property_with_assets,
     update_property_listing,
 )
-from services.groq_service import analyze_all_images, synthesize_marketing_copy, synthesize_creative_assets
+from services.groq_service import analyze_all_images, synthesize_creative_assets
 from config import get_settings
 
 settings = get_settings()
@@ -18,21 +18,17 @@ router = APIRouter()
 
 
 class ProcessPropertyRequest(BaseModel):
-    image_paths: list[str]       # Supabase storage paths e.g. "user_id/property_id/img1.jpg"
+    image_paths: list[str]
     raw_bullet_points: str
-    creative_type: str = "all"  # all | instagram | email | banner
+    creative_type: str = "instagram"
     company_name: str | None = None
-    logo_path: str | None = None       # Agent's raw notes
-
+    logo_path: str | None = None
 
 class ProcessPropertyResponse(BaseModel):
     property_id: str
-    mls_description: str
-    instagram_script: str
-    email_blast: str
-    facebook_ad: str
+    creative_type: str
     creative_brief: str = ""
-    instagram_post: dict = {}
+    instagram_reel: dict = {}
     banner_poster: dict = {}
     email_brochure: dict = {}
     image_urls: list[str] = []
@@ -89,36 +85,29 @@ async def process_property(
 
     # ── Step 4: Synthesize Marketing Copy ────────────────────────────────────
     try:
-        assets = await synthesize_marketing_copy(image_analyses, request.raw_bullet_points)
-        creative_assets = await synthesize_creative_assets(
-    image_analyses=image_analyses,
-    raw_description=request.raw_bullet_points,
-    creative_type=request.creative_type,
-    company_name=request.company_name,
-)
-
-        assets.update(creative_assets)
-        assets["logo_storage_path"] = request.logo_path
+        assets = await synthesize_creative_assets(
+        image_analyses=image_analyses,
+        raw_description=request.raw_bullet_points,
+        creative_type=request.creative_type,
+        company_name=request.company_name,
+    )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Copy generation failed: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Creative generation failed: {str(e)}")
 
     # ── Step 5: Save Marketing Assets ─────────────────────────────────────────
     await save_marketing_assets(property_id, assets)
 
     # ── Step 6: Return Results ────────────────────────────────────────────────
     return ProcessPropertyResponse(
-        property_id=property_id,
-        mls_description=assets.get("mls_description", ""),
-        instagram_script=assets.get("instagram_script", ""),
-        email_blast=assets.get("email_blast", ""),
-        facebook_ad=assets.get("facebook_ad", ""),
-        creative_brief=assets.get("creative_brief", ""),
-instagram_post=assets.get("instagram_post", {}),
-banner_poster=assets.get("banner_poster", {}),
-email_brochure=assets.get("email_brochure", {}),
-image_urls=image_urls,
-logo_url=build_public_url(request.logo_path, "brand-assets") if request.logo_path else None,
-    )
+    property_id=property_id,
+    creative_type=assets.get("creative_type", request.creative_type),
+    creative_brief=assets.get("creative_brief", ""),
+    instagram_reel=assets.get("instagram_reel", {}),
+    banner_poster=assets.get("banner_poster", {}),
+    email_brochure=assets.get("email_brochure", {}),
+    image_urls=image_urls,
+    logo_url=build_public_url(request.logo_path, "brand-assets") if request.logo_path else None,
+)
 
 
 @router.get("/properties")

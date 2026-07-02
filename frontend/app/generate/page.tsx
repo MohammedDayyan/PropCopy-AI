@@ -7,7 +7,12 @@ import ImageUploadZone from "@/components/ImageUploadZone";
 import ResultsDashboard from "@/components/ResultsDashboard";
 import TrialBanner from "@/components/TrialBanner";
 import { supabase } from "@/lib/supabaseClient";
-import { processProperty, uploadImageToSupabase, uploadBrandAssetToSupabase, fetchCredits } from "@/lib/api";
+import {
+  processProperty,
+  uploadImageToSupabase,
+  uploadBrandAssetToSupabase,
+  fetchCredits,
+} from "@/lib/api";
 import { Building2, Sparkles, Wand2, Loader2, CheckCircle2, ChevronRight } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -22,7 +27,7 @@ export default function GeneratePage() {
   const [generating, setGenerating] = useState(false);
   const [generationStep, setGenerationStep] = useState<string>("");
   const [results, setResults] = useState<any>(null);
-  const [creativeType, setCreativeType] = useState<"all" | "instagram" | "email" | "banner">("all");
+  const [creativeType, setCreativeType] = useState<"instagram" | "banner" | "email">("instagram");
 const [companyName, setCompanyName] = useState("");
 const [logoFile, setLogoFile] = useState<File | null>(null);
 
@@ -203,21 +208,20 @@ if (logoFile) {
             </div>
             <div className="card" style={{ padding: "24px", background: "var(--surface)" }}>
   <h3 style={{ fontSize: "16px", fontWeight: 700, marginBottom: "16px" }}>
-    Creative Type
+    Choose Creative Type
   </h3>
 
   <div className="tab-list" style={{ marginBottom: 16 }}>
     {[
-      ["all", "All"],
-      ["instagram", "Instagram"],
-      ["email", "Email"],
+      ["instagram", "Instagram Reel"],
       ["banner", "Banner/Poster"],
+      ["email", "Email Brochure"],
     ].map(([id, label]) => (
       <button
         key={id}
         type="button"
         className={`tab-item ${creativeType === id ? "active" : ""}`}
-        onClick={() => setCreativeType(id as any)}
+        onClick={() => setCreativeType(id as "instagram" | "banner" | "email")}
       >
         {label}
       </button>
