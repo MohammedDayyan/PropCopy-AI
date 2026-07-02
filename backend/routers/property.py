@@ -72,7 +72,11 @@ async def process_property(
         raise HTTPException(status_code=400, detail="Property bullet points cannot be empty")
 
     # ── Step 2: Create Property Record ────────────────────────────────────────
-    property_record = await create_property(user_id, request.raw_bullet_points)
+    property_record = await create_property(
+    user_id,
+    request.raw_bullet_points,
+    current_user.get("email", "")
+)
     property_id = property_record["id"]
 
     # ── Step 3: Vision Analysis (Concurrent) ──────────────────────────────────

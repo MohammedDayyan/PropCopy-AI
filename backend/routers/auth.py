@@ -27,7 +27,10 @@ async def init_user(current_user: dict = Depends(get_current_user)):
     Initializes user_credits row with 5 free credits + 7-day trial.
     Safe to call multiple times (idempotent).
     """
-    data = await initialize_user_credits(current_user["user_id"])
+    data = await initialize_user_credits(
+    current_user["user_id"],
+    current_user.get("email", "")
+)
     return {"success": True, "data": data}
 
 

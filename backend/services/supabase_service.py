@@ -10,6 +10,26 @@ def get_supabase_admin() -> Client:
     """Returns a Supabase client with the service role key (admin privileges, bypasses RLS)."""
     return create_client(settings.supabase_url, settings.supabase_service_role_key)
 
+async def ensure_user_profile(user_id: str, email: str = "") -> dict:
+    client = get_supabase_admin()
+
+    existing = (
+        client.table("profiles")
+        .select("*")
+        .eq("id", user_id)
+        .execute()
+    )
+
+    if existing.data:
+        return existing.data[0]
+
+    profile_data = {"id": user_id}
+
+    if email:
+        profile_data["email"] = email
+
+    result = client.table("profiles").insert(profile_data).execute()
+    return result.data[0] if result.data else {}
 
 async def create_confirmed_auth_user(email: str, password: str) -> dict:
     """
@@ -48,12 +68,13 @@ async def create_confirmed_auth_user(email: str, password: str) -> dict:
 
 # ─── User Credits ────────────────────────────────────────────────────────────
 
-async def initialize_user_credits(user_id: str) -> dict:
-    """Called on first login. Creates a user_credits row with 5 free credits + 7-day trial."""
+async def initialize_user_credits(user_id: str, email: str = "") -> dict:
     client = get_supabase_admin()
+
+    await ensure_user_profile(user_id, email)
+
     trial_ends_at = (datetime.now(timezone.utc) + timedelta(days=7)).isoformat()
 
-    # Use upsert so repeat calls are safe
     result = (
         client.table("user_credits")
         .upsert(
@@ -63,12 +84,12 @@ async def initialize_user_credits(user_id: str) -> dict:
                 "trial_ends_at": trial_ends_at,
             },
             on_conflict="user_id",
-            ignore_duplicates=True,  # Don't overwrite if already exists
+            ignore_duplicates=True,
         )
         .execute()
     )
-    return result.data[0] if result.data else {}
 
+    return result.data[0] if result.data else {}
 
 async def get_user_credits(user_id: str) -> dict:
     """Fetches current credit balance and trial info for a user."""
@@ -129,15 +150,20 @@ async def add_credits(user_id: str, amount: int) -> dict:
 
 # ─── Properties ──────────────────────────────────────────────────────────────
 
-async def create_property(user_id: str, raw_bullet_points: str) -> dict:
+async def create_property(user_id: str, raw_bullet_points: str, email: str = "") -> dict:
     client = get_supabase_admin()
+
+    await ensure_user_profile(user_id, email)
+
     result = (
         client.table("properties")
         .insert({"user_id": user_id, "raw_bullet_points": raw_bullet_points})
         .execute()
     )
+
     if not result.data:
         raise HTTPException(status_code=500, detail="Failed to create property record")
+
     return result.data[0]
 
 
