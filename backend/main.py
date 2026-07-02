@@ -1,7 +1,5 @@
-import re
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import Response
 from routers import property, payments, auth
 from config import get_settings
 
@@ -9,52 +7,22 @@ settings = get_settings()
 
 app = FastAPI(
     title="PropCopy AI API",
-    description="Backend API for PropCopy AI - Real Estate Marketing Copy Generator",
+    description="Backend API for PropCopy AI",
     version="1.0.0",
 )
 
-ALLOWED_ORIGIN_REGEX = re.compile(
-    r"^https://prop-copy-[a-zA-Z0-9-]+-mohammeddayyans-projects\.vercel\.app$"
-)
-
-allowed_origins = {
+allowed_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
-    "https://prop-copy-jsry47yru-mohammeddayyans-projects.vercel.app",
-}
+]
 
 if settings.frontend_url:
-    allowed_origins.add(settings.frontend_url.rstrip("/"))
-
-
-def is_allowed_origin(origin: str | None) -> bool:
-    if not origin:
-        return False
-    return origin in allowed_origins or bool(ALLOWED_ORIGIN_REGEX.match(origin))
-
-
-@app.middleware("http")
-async def force_cors_headers(request: Request, call_next):
-    origin = request.headers.get("origin")
-
-    if request.method == "OPTIONS" and is_allowed_origin(origin):
-        response = Response(status_code=204)
-    else:
-        response = await call_next(request)
-
-    if is_allowed_origin(origin):
-        response.headers["Access-Control-Allow-Origin"] = origin
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Allow-Methods"] = "GET,POST,PUT,DELETE,OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = "Authorization,Content-Type"
-
-    return response
-
+    allowed_origins.append(settings.frontend_url.rstrip("/"))
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=list(allowed_origins),
-    allow_origin_regex=r"^https://prop-copy-[a-zA-Z0-9-]+-mohammeddayyans-projects\.vercel\.app$",
+    allow_origins=allowed_origins,
+    allow_origin_regex=r"^https://prop-copy-[a-z0-9]+-mohammeddayyans-projects\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
