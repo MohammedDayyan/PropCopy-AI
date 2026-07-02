@@ -1,6 +1,6 @@
 "use client";
 
-import { Copy, Check, Instagram, Mail, PanelTop } from "lucide-react";
+import { Copy, Check, Video, Mail, Megaphone } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
 
@@ -28,8 +28,8 @@ export default function ResultsDashboard({ assets }: ResultsDashboardProps) {
     <div className="card accent-glow" style={{ padding: 20 }}>
       <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
         <strong style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          {type === "instagram" && <Instagram size={18} />}
-          {type === "banner" && <PanelTop size={18} />}
+          {type === "instagram" && <Video size={18} />}
+          {type === "banner" && <Megaphone size={18} />}
           {type === "email" && <Mail size={18} />}
           Generated {type}
         </strong>
