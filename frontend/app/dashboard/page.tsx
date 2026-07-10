@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import TrialBanner from "@/components/TrialBanner";
 import ResultsDashboard from "@/components/ResultsDashboard";
@@ -30,11 +31,20 @@ interface Property {
 }
 
 export default function Dashboard() {
+  const router = useRouter();
   const [properties, setProperties] = useState<Property[]>([]);
   const [creditsInfo, setCreditsInfo] = useState<any>(null);
   const [selectedProperty, setSelectedProperty] = useState<Property | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingDetails, setLoadingDetails] = useState(false);
+
+  const handleGenerateClick = (e: React.MouseEvent) => {
+    if (creditsInfo && (creditsInfo.credits_remaining <= 0 || creditsInfo.trial_expired)) {
+      e.preventDefault();
+      toast.error("Free trial over! Please buy credits first.");
+      router.push("/billing");
+    }
+  };
 
   // Edit States
   const [isEditing, setIsEditing] = useState(false);
@@ -179,7 +189,7 @@ export default function Dashboard() {
             </p>
           </div>
 
-          <Link href="/generate" className="btn-primary">
+          <Link href="/generate" className="btn-primary" onClick={handleGenerateClick}>
             <Plus size={16} /> New Property Copy
           </Link>
         </div>
@@ -229,7 +239,7 @@ export default function Dashboard() {
             <p style={{ color: "var(--muted)", fontSize: "14px", marginBottom: "24px", lineHeight: "1.5" }}>
               Upload floor plans or photos to generate high-converting MLS listings, instagram scripts, email blasts, and Facebook ads.
             </p>
-            <Link href="/generate" className="btn-primary" style={{ display: "inline-flex" }}>
+            <Link href="/generate" className="btn-primary" style={{ display: "inline-flex" }} onClick={handleGenerateClick}>
               Generate Copy Now <Plus size={16} />
             </Link>
           </div>

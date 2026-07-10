@@ -13,7 +13,7 @@ import {
   uploadBrandAssetToSupabase,
   fetchCredits,
 } from "@/lib/api";
-import { Building2, Sparkles, Wand2, Loader2, CheckCircle2, ChevronRight } from "lucide-react";
+import { Building2, Sparkles, Wand2, Loader2, CheckCircle2, ChevronRight, AlertTriangle, CreditCard } from "lucide-react";
 import toast from "react-hot-toast";
 
 export default function GeneratePage() {
@@ -135,7 +135,76 @@ if (logoFile) {
           </p>
         </div>
 
-        {generating ? (
+        {creditsInfo && (creditsInfo.credits_remaining <= 0 || creditsInfo.trial_expired) ? (
+          /* Paywall Blocker State */
+          <div
+            className="card accent-glow animate-fade-in-up"
+            style={{
+              padding: "48px 24px",
+              textAlign: "center",
+              background: "var(--surface)",
+              maxWidth: "550px",
+              margin: "40px auto 0",
+              border: "1px solid var(--border)",
+              boxShadow: "0 8px 32px rgba(0, 0, 0, 0.4)",
+            }}
+          >
+            <div
+              style={{
+                width: "64px",
+                height: "64px",
+                background: "rgba(239, 68, 68, 0.1)",
+                borderRadius: "50%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                margin: "0 auto 24px",
+                border: "1px solid rgba(239, 68, 68, 0.2)",
+              }}
+            >
+              <AlertTriangle size={32} color="var(--danger)" />
+            </div>
+
+            <h2 style={{ fontSize: "24px", fontWeight: 800, marginBottom: "12px", color: "var(--foreground)" }}>
+              {creditsInfo.trial_expired ? "Free Trial Expired" : "Out of Credits"}
+            </h2>
+
+            <p style={{ color: "var(--muted)", fontSize: "14px", lineHeight: "1.6", marginBottom: "32px", maxWidth: "420px", margin: "0 auto" }}>
+              {creditsInfo.trial_expired
+                ? "Your 7-day free trial has expired. Upgrade your account to continue generating high-converting real estate marketing copy."
+                : "You have 0 credits remaining. Please purchase more credits to generate MLS descriptions, Instagram posts, and brochures."}
+            </p>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", alignItems: "stretch", maxWidth: "280px", margin: "0 auto" }}>
+              <button
+                onClick={() => router.push("/billing")}
+                className="btn-primary"
+                style={{
+                  padding: "12px 24px",
+                  fontSize: "14px",
+                  fontWeight: 700,
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <CreditCard size={16} /> Buy Credits Now
+              </button>
+
+              <button
+                onClick={() => router.push("/dashboard")}
+                className="btn-secondary"
+                style={{
+                  padding: "10px 24px",
+                  fontSize: "13px",
+                }}
+              >
+                Back to Dashboard
+              </button>
+            </div>
+          </div>
+        ) : generating ? (
           /* Loading Pipeline State */
           <div
             className="card accent-glow animate-fade-in-up"

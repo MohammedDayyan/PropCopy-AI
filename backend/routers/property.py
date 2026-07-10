@@ -104,15 +104,15 @@ async def process_property(
 
     # ── Step 6: Return Results ────────────────────────────────────────────────
     return ProcessPropertyResponse(
-    property_id=property_id,
-    creative_type=assets.get("creative_type", request.creative_type),
-    creative_brief=assets.get("creative_brief", ""),
-    instagram_reel=assets.get("instagram_reel", {}),
-    banner_poster=assets.get("banner_poster", {}),
-    email_brochure=assets.get("email_brochure", {}),
-    image_urls=image_urls,
-    logo_url=build_public_url(request.logo_path, "brand-assets") if request.logo_path else None,
-)
+        property_id=property_id,
+        creative_type=assets.get("creative_type", request.creative_type),
+        creative_brief=assets.get("creative_brief", ""),
+        instagram_reel=assets.get("instagram_reel") or assets.get("instagram_post") or {},
+        banner_poster=assets.get("banner_poster", {}),
+        email_brochure=assets.get("email_brochure", {}),
+        image_urls=image_urls,
+        logo_url=build_public_url(request.logo_path, "brand-assets") if request.logo_path else None,
+    )
 
 
 @router.get("/properties")

@@ -17,7 +17,13 @@ export default function ResultsDashboard({ assets }: ResultsDashboardProps) {
   const type = assets.creative_type;
 
   const copyText = async () => {
-    const text = JSON.stringify(assets, null, 2);
+    const instagramData = assets.instagram_reel || assets.instagram_post || {};
+    const copyableAssets = {
+      ...assets,
+      instagram_post: instagramData,
+      instagram_reel: instagramData,
+    };
+    const text = JSON.stringify(copyableAssets, null, 2);
     await navigator.clipboard.writeText(text);
     setCopied(true);
     toast.success("Copied");
@@ -45,7 +51,7 @@ export default function ResultsDashboard({ assets }: ResultsDashboardProps) {
           imageUrl={primaryImage}
           secondImageUrl={secondImage}
           logoUrl={logoUrl}
-          reel={assets.instagram_reel}
+          reel={assets.instagram_reel || assets.instagram_post}
         />
       )}
 
