@@ -529,7 +529,10 @@ export default function Dashboard() {
                       {/* 3. Marketing Copy View (Read vs Edit) */}
                       {!isEditing ? (
                         selectedProperty.marketing_assets && selectedProperty.marketing_assets.length > 0 ? (
-                          <ResultsDashboard assets={selectedProperty.marketing_assets[0]} />
+                          <ResultsDashboard
+                            assets={selectedProperty.marketing_assets[0]}
+                            propertyImages={selectedProperty.property_images}
+                          />
                         ) : (
                           <div className="card" style={{ padding: "32px", textAlign: "center" }}>
                             <p style={{ color: "var(--muted)" }}>Marketing copy generation is pending or failed for this listing.</p>

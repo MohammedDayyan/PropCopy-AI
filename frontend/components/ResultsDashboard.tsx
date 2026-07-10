@@ -1,20 +1,59 @@
 "use client";
 
-import { Copy, Check, Video, Mail, Megaphone } from "lucide-react";
-import { useState } from "react";
+import { Copy, Check, Video, Mail, Megaphone, Download } from "lucide-react";
+import { useRef, useState } from "react";
 import toast from "react-hot-toast";
 
 interface ResultsDashboardProps {
   assets: any;
+  /** Optional: property_images rows from Supabase (dashboard context) */
+  propertyImages?: Array<{ storage_path: string }>;
 }
 
-export default function ResultsDashboard({ assets }: ResultsDashboardProps) {
-  const [copied, setCopied] = useState(false);
+const SUPABASE_URL =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder-ref.supabase.co";
 
-  const primaryImage = assets.image_urls?.[0];
-  const secondImage = assets.image_urls?.[1] || primaryImage;
-  const logoUrl = assets.logo_url;
-  const type = assets.creative_type;
+function buildPublicUrl(path: string, bucket: string) {
+  return `${SUPABASE_URL}/storage/v1/object/public/${bucket}/${path}`;
+}
+
+/** Detect creative_type from the DB row when it's not explicitly set */
+function detectCreativeType(assets: any): string {
+  if (assets.creative_type) return assets.creative_type;
+  const ip = assets.instagram_post || assets.instagram_reel;
+  if (ip && Object.keys(ip).length > 0) return "instagram";
+  if (assets.banner_poster && Object.keys(assets.banner_poster).length > 0) return "banner";
+  if (assets.email_brochure && Object.keys(assets.email_brochure).length > 0) return "email";
+  return "";
+}
+
+export default function ResultsDashboard({
+  assets,
+  propertyImages,
+}: ResultsDashboardProps) {
+  const [copied, setCopied] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const previewRef = useRef<HTMLDivElement>(null);
+
+  // Derive type
+  const type = detectCreativeType(assets);
+
+  // Derive image URLs — prefer live response image_urls, fall back to DB storage paths
+  const imageUrls: string[] = assets.image_urls?.length
+    ? assets.image_urls
+    : (propertyImages || []).map((img) =>
+        buildPublicUrl(img.storage_path, "property-images")
+      );
+
+  const primaryImage = imageUrls[0];
+  const secondImage = imageUrls[1] || primaryImage;
+
+  // Derive logo URL — prefer live response logo_url, fall back to DB logo_storage_path
+  const logoUrl: string | undefined =
+    assets.logo_url ||
+    (assets.logo_storage_path
+      ? buildPublicUrl(assets.logo_storage_path, "brand-assets")
+      : undefined);
 
   const copyText = async () => {
     const instagramData = assets.instagram_reel || assets.instagram_post || {};
@@ -30,46 +69,99 @@ export default function ResultsDashboard({ assets }: ResultsDashboardProps) {
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const handleDownload = async () => {
+    if (!previewRef.current) return;
+    setDownloading(true);
+    try {
+      // Dynamically import html2canvas to avoid SSR issues
+      const html2canvas = (await import("html2canvas")).default;
+      const canvas = await html2canvas(previewRef.current, {
+        useCORS: true,
+        allowTaint: true,
+        scale: 2,
+        backgroundColor: null,
+      });
+      const link = document.createElement("a");
+      link.download = `propcopy-${type}-post.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+      toast.success("Downloaded!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Download failed. Try right-clicking the preview to save.");
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  if (!type) {
+    return (
+      <div className="card" style={{ padding: "32px", textAlign: "center" }}>
+        <p style={{ color: "var(--muted)" }}>
+          Marketing copy generation is pending or failed for this listing.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="card accent-glow" style={{ padding: 20 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 16 }}>
+      {/* Header row */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, flexWrap: "wrap", gap: 8 }}>
         <strong style={{ display: "flex", alignItems: "center", gap: 8 }}>
           {type === "instagram" && <Video size={18} />}
           {type === "banner" && <Megaphone size={18} />}
           {type === "email" && <Mail size={18} />}
-          Generated {type}
+          Generated {type === "instagram" ? "Instagram Post" : type === "banner" ? "Banner / Poster" : "Email Brochure"}
         </strong>
 
-        <button className="btn-secondary" onClick={copyText}>
-          {copied ? <Check size={14} /> : <Copy size={14} />}
-          Copy Text
-        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          {/* Download button — only for instagram and banner */}
+          {(type === "instagram" || type === "banner") && (
+            <button
+              className="btn-secondary"
+              onClick={handleDownload}
+              disabled={downloading}
+              style={{ display: "flex", alignItems: "center", gap: 6 }}
+            >
+              <Download size={14} />
+              {downloading ? "Saving…" : "Download"}
+            </button>
+          )}
+          <button className="btn-secondary" onClick={copyText}>
+            {copied ? <Check size={14} /> : <Copy size={14} />}
+            Copy Text
+          </button>
+        </div>
       </div>
 
-      {type === "instagram" && (
-        <InstagramReelPreview
-          imageUrl={primaryImage}
-          secondImageUrl={secondImage}
-          logoUrl={logoUrl}
-          reel={assets.instagram_reel || assets.instagram_post}
-        />
-      )}
+      {/* Preview */}
+      <div ref={previewRef}>
+        {type === "instagram" && (
+          <InstagramReelPreview
+            imageUrl={primaryImage}
+            secondImageUrl={secondImage}
+            logoUrl={logoUrl}
+            reel={assets.instagram_reel || assets.instagram_post}
+          />
+        )}
 
-      {type === "banner" && (
-        <BannerPreview
-          imageUrl={primaryImage}
-          logoUrl={logoUrl}
-          banner={assets.banner_poster}
-        />
-      )}
+        {type === "banner" && (
+          <BannerPreview
+            imageUrl={primaryImage}
+            logoUrl={logoUrl}
+            banner={assets.banner_poster}
+          />
+        )}
 
-      {type === "email" && (
-        <EmailPreview
-          imageUrl={primaryImage}
-          logoUrl={logoUrl}
-          email={assets.email_brochure}
-        />
-      )}
+        {type === "email" && (
+          <EmailPreview
+            imageUrl={primaryImage}
+            logoUrl={logoUrl}
+            email={assets.email_brochure}
+          />
+        )}
+      </div>
     </div>
   );
 }
@@ -81,6 +173,7 @@ function LogoBlock({ logoUrl }: { logoUrl?: string }) {
     <img
       src={logoUrl}
       alt="Company logo"
+      crossOrigin="anonymous"
       style={{
         width: 44,
         height: 44,
@@ -119,8 +212,8 @@ function InstagramReelPreview({
       }}
     >
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", height: "58%" }}>
-        <img src={imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
-        <img src={secondImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img crossOrigin="anonymous" src={imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+        <img crossOrigin="anonymous" src={secondImageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
       </div>
 
       <div
@@ -210,7 +303,7 @@ function BannerPreview({
         background: "#050505",
       }}
     >
-      <img src={imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+      <img crossOrigin="anonymous" src={imageUrl} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
 
       <div
         style={{
@@ -257,11 +350,12 @@ function EmailPreview({
         overflow: "hidden",
       }}
     >
-      <img src={imageUrl} alt="" style={{ width: "100%", height: 260, objectFit: "cover" }} />
+      <img crossOrigin="anonymous" src={imageUrl} alt="" style={{ width: "100%", height: 260, objectFit: "cover" }} />
 
       <div style={{ padding: 28 }}>
         {logoUrl && (
           <img
+            crossOrigin="anonymous"
             src={logoUrl}
             alt="Company logo"
             style={{ width: 54, height: 54, objectFit: "cover", borderRadius: "50%", marginBottom: 14 }}
