@@ -148,18 +148,15 @@ Return content ONLY for the selected creative type.
 Do not generate other formats.
 
 Rules for Instagram:
-- Create text for a bold Instagram reel/post cover.
-- Style should feel like a viral editorial post: strong headline, short quote/highlight, punchy supporting line.
-- Text must be short enough to fit inside a 9:16 reel cover.
-- The frontend will place the company logo just above the main text.
-
-Rules for Banner:
-- Create a wide banner/poster headline, subheadline, CTA, and footer note.
-- Logo will appear just above the main text.
-
-Rules for Email:
-- Create brochure-style email content with sections.
-- Logo will appear above the intro.
+- Act as a world-class real estate advertising agent.
+- Create a multi-page Instagram carousel.
+- For each image analysis provided, generate a corresponding slide.
+- Do NOT output dry description text (e.g., "The image depicts a kitchen"). Instead, write highly compelling, premium, and luxury real estate slogans/headlines and details in uppercase advertising style.
+- Each slide object inside the `slides` list must contain:
+  1. `headline`: A bold, premium main slogan (e.g., "LUXURY REDEFINED", "ELEGANT LIVING", "CULINARY HAVEN").
+  2. `highlight`: A colored highlight subheadline (e.g., "5BHK SERENITY", "PANORAMIC VIEWS", "MODULAR KITCHEN").
+  3. `supporting_text`: A punchy ad copy line (e.g., "EXPERIENCE PREMIUM LIVING WITH LUSH GREENERY", "BRIGHT AND AIRY LIVING SPACES FOR THE FAMILY").
+- Also generate the overall cover slide info ("headline", "highlight", "supporting_text") and the post "caption" (description).
 
 Return ONLY valid JSON.
 
@@ -168,11 +165,18 @@ For instagram:
   "creative_type": "instagram",
   "creative_brief": "",
   "instagram_reel": {
-    "brand_handle": "",
-    "headline": "",
-    "highlight": "",
-    "supporting_text": "",
-    "caption": ""
+    "brand_handle": "@brand",
+    "headline": "LUXURY REDEFINED",
+    "highlight": "5BHK SERENITY",
+    "supporting_text": "EXPERIENCE PREMIUM LIVING WITH LUSH GREENERY",
+    "caption": "Full Instagram post description with emojis and hashtags...",
+    "slides": [
+      {
+        "headline": "HEADLINE FOR SLIDE",
+        "highlight": "HIGHLIGHT FOR SLIDE",
+        "supporting_text": "SUPPORTING TEXT FOR SLIDE"
+      }
+    ]
   }
 }
 

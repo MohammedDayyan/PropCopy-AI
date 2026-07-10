@@ -140,6 +140,20 @@ export async function updateProperty(
   return res.json();
 }
 
+export async function deleteProperty(id: string) {
+  const headers = await getAuthHeaders();
+  const res = await fetch(`${BACKEND_URL}/api/properties/${id}`, {
+    method: "DELETE",
+    headers,
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail || "Failed to delete property");
+  }
+  return res.json();
+}
+
+
 export async function createRazorpayOrder() {
   const headers = await getAuthHeaders();
   const res = await fetch(`${BACKEND_URL}/api/create-order`, {

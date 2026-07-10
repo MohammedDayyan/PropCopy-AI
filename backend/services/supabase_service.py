@@ -300,3 +300,29 @@ async def update_property_listing(property_id: str, user_id: str, updates: dict)
                 client.table("marketing_assets").insert(asset_updates).execute()
 
     return await get_property_with_assets(property_id, user_id)
+
+
+async def delete_property_listing(property_id: str, user_id: str) -> dict:
+    """Deletes a property listing and all related marketing assets and images."""
+    client = get_supabase_admin()
+
+    # 1. Verify ownership
+    property_check = (
+        client.table("properties")
+        .select("id")
+        .eq("id", property_id)
+        .eq("user_id", user_id)
+        .execute()
+    )
+    if not property_check.data:
+        raise HTTPException(status_code=404, detail="Property listing not found or unauthorized")
+
+    # 2. Delete related records explicitly to avoid constraint failures
+    client.table("marketing_assets").delete().eq("property_id", property_id).execute()
+    client.table("property_images").delete().eq("property_id", property_id).execute()
+
+    # 3. Delete property record
+    result = client.table("properties").delete().eq("id", property_id).eq("user_id", user_id).execute()
+
+    return {"status": "success", "deleted_id": property_id}
+

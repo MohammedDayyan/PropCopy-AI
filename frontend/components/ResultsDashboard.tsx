@@ -62,6 +62,79 @@ function truncate(text: string, maxLen: number): string {
   return text.slice(0, maxLen).replace(/\s\S*$/, "") + "…";
 }
 
+// ── Fallback Slogan Generator ──────────────────────────────────────────────────
+
+function generateFallbackSlideCopy(
+  idx: number,
+  aiAnalysisText: string = "",
+  bullets: string[] = []
+) {
+  const analysis = aiAnalysisText.toLowerCase();
+  
+  // Clean analysis from "The image depicts...", "A photo of..."
+  let cleanAnalysis = aiAnalysisText
+    .replace(/^(the image depicts|a photo of|an image of|this is a photo of|this is an image of|there is a|there are some)\s+/i, "")
+    .trim();
+  if (cleanAnalysis) {
+    cleanAnalysis = cleanAnalysis.charAt(0).toUpperCase() + cleanAnalysis.slice(1);
+  }
+
+  // Keywords mapping for luxurious ad copy
+  if (analysis.includes("kitchen")) {
+    return {
+      headline: "CULINARY HAVEN",
+      highlight: "MODULAR CHEF'S KITCHEN",
+      supporting_text: bullets[0] || "STATE-OF-THE-ART APPLIANCES & PREMIUM MARBLE FINISHES"
+    };
+  } else if (analysis.includes("living") || analysis.includes("hall") || analysis.includes("salon")) {
+    return {
+      headline: "SPATIAL MAJESTY",
+      highlight: "OPULENT LIVING AREA",
+      supporting_text: bullets[0] || "CRAFTED FOR ROYAL COMFORT & UNCOMPROMISED LUXURY"
+    };
+  } else if (analysis.includes("bedroom") || analysis.includes("bed")) {
+    return {
+      headline: "SERENE SANCTUARY",
+      highlight: "EXQUISITE MASTER SUITE",
+      supporting_text: bullets[0] || "A PRIVATE RETREAT OF COMFORT & REFINED ELEGANCE"
+    };
+  } else if (analysis.includes("bathroom") || analysis.includes("bath") || analysis.includes("restroom")) {
+    return {
+      headline: "SPA EXPERIENCE",
+      highlight: "DESIGNER BATH SUITE",
+      supporting_text: bullets[0] || "PREMIUM FITTINGS & MARBLE WALLS FOR TRANQUIL RELAXATION"
+    };
+  } else if (analysis.includes("balcony") || analysis.includes("view") || analysis.includes("terrace") || analysis.includes("vista")) {
+    return {
+      headline: "SCENIC PANORAMA",
+      highlight: "BREATHLESS OUTLOOK",
+      supporting_text: bullets[0] || "ENDLESS HORIZONS MET WITH MAGNIFICENT DESIGN"
+    };
+  } else if (analysis.includes("pool") || analysis.includes("swimming")) {
+    return {
+      headline: "AQUATIC BLISS",
+      highlight: "PRIVATE SWIMMING POOL",
+      supporting_text: bullets[0] || "LUSH POOLSIDE DECK FOR PERFECT WEEKEND LEISURE"
+    };
+  } else if (analysis.includes("gym") || analysis.includes("fitness")) {
+    return {
+      headline: "HEALTH & WELLNESS",
+      highlight: "PRIVATE FITNESS CENTRE",
+      supporting_text: bullets[0] || "EQUIPPED WITH MODERN GEAR FOR YOUR ACTIVE LIFESTYLE"
+    };
+  }
+
+  // General default fallback
+  const headlineList = ["LUXURY REDEFINED", "EXCLUSIVE RESIDENCE", "ARCHITECTURAL MARVEL", "PREMIUM LIVING"];
+  const highlightList = ["UNCOMPROMISED QUALITY", "SOPHISTICATED DESIGN", "ELITE NEIGHBOURHOOD", "VASTU COMPLIANT"];
+  
+  return {
+    headline: headlineList[idx % headlineList.length],
+    highlight: highlightList[idx % highlightList.length],
+    supporting_text: bullets[0] || cleanAnalysis || "EXPERIENCE REFINED REAL ESTATE EXCELLENCE"
+  };
+}
+
 // ── Slide types ────────────────────────────────────────────────────────────────
 
 interface CoverSlide {
@@ -74,8 +147,9 @@ interface CoverSlide {
 interface ImageSlide {
   kind: "image";
   img: string;
-  aiCaption: string;      // full AI analysis of this specific image
-  bulletPoints: string[]; // relevant lines from raw notes
+  headline: string;
+  highlight: string;
+  supporting_text: string;
   index: number;          // 1-based display index among image slides
   total: number;
 }
@@ -143,14 +217,24 @@ export default function ResultsDashboard({
     imageUrls.forEach((imgUrl, idx) => {
       const propImg = propertyImages?.[idx];
       const start = idx * perSlide;
+      const slideBullets = bullets.slice(start, start + perSlide);
+
+      // Check if backend returned structured slides info
+      const backendSlide = reel?.slides?.[idx];
+      const copy = backendSlide
+        ? {
+            headline: backendSlide.headline || "LUXURY REDEFINED",
+            highlight: backendSlide.highlight || "EXCLUSIVE SPACE",
+            supporting_text: backendSlide.supporting_text || "PREMIUM REAL ESTATE DETAILS"
+          }
+        : generateFallbackSlideCopy(idx, propImg?.ai_analysis, slideBullets);
+
       result.push({
         kind: "image",
         img: imgUrl,
-        // Show the full AI vision analysis — this IS the "font describing the image"
-        aiCaption: propImg?.ai_analysis
-          ? truncate(propImg.ai_analysis, 200)
-          : "",
-        bulletPoints: bullets.slice(start, start + perSlide),
+        headline: copy.headline,
+        highlight: copy.highlight,
+        supporting_text: copy.supporting_text,
         index: idx + 1,
         total: totalImageSlides,
       });
@@ -704,56 +788,6 @@ function CoverSlideView({
             {reel.supporting_text}
           </p>
         )}
-
-        {/* Image descriptions — what the AI sees in each of the 2 cover images */}
-        {(s.img1Analysis || s.img2Analysis) && (
-          <div
-            style={{
-              display: "flex",
-              gap: 6,
-              marginTop: 4,
-            }}
-          >
-            {s.img1Analysis && (
-              <div
-                style={{
-                  flex: 1,
-                  background: "rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(4px)",
-                  borderRadius: 6,
-                  padding: "5px 7px",
-                  fontSize: 9.5,
-                  lineHeight: 1.4,
-                  color: "rgba(255,255,255,0.88)",
-                  textAlign: "left",
-                  fontStyle: "italic",
-                  borderLeft: "2px solid #f59e0b",
-                }}
-              >
-                {s.img1Analysis}
-              </div>
-            )}
-            {s.img2Analysis && s.img1 !== s.img2 && (
-              <div
-                style={{
-                  flex: 1,
-                  background: "rgba(255,255,255,0.12)",
-                  backdropFilter: "blur(4px)",
-                  borderRadius: 6,
-                  padding: "5px 7px",
-                  fontSize: 9.5,
-                  lineHeight: 1.4,
-                  color: "rgba(255,255,255,0.88)",
-                  textAlign: "left",
-                  fontStyle: "italic",
-                  borderLeft: "2px solid #f59e0b",
-                }}
-              >
-                {s.img2Analysis}
-              </div>
-            )}
-          </div>
-        )}
       </div>
     </div>
   );
@@ -783,7 +817,7 @@ function ImageSlideView({
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, transparent 22%, rgba(0,0,0,0.45) 48%, rgba(0,0,0,0.88) 72%, #000 90%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, transparent 28%, rgba(0,0,0,0.5) 50%, #000 82%)",
         }}
       />
 
@@ -814,77 +848,82 @@ function ImageSlideView({
       <div
         style={{
           position: "absolute",
-          left: 16,
-          right: 16,
-          bottom: 16,
+          left: 20,
+          right: 20,
+          bottom: 18,
+          textAlign: "center",
           color: "#fff",
         }}
       >
-        {/* ── LOGO centered above description ── */}
+        {/* logo */}
         {logoUrl && (
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
             <img
               crossOrigin="anonymous"
               src={logoUrl}
               alt="logo"
               style={{
-                width: 38,
-                height: 38,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
                 objectFit: "cover",
-                border: "2px solid rgba(255,255,255,0.85)",
-                boxShadow: "0 2px 12px rgba(0,0,0,0.6)",
+                border: "2px solid rgba(255,255,255,0.8)",
               }}
             />
           </div>
         )}
 
-        {/* ── PRIMARY: AI image description (the "font describing the image") ── */}
-        {s.aiCaption && (
-          <p
-            style={{
-              fontSize: 13,
-              fontWeight: 700,
-              lineHeight: 1.5,
-              margin: "0 0 10px",
-              color: "#fff",
-              textAlign: "center",
-              textShadow: "0 1px 6px rgba(0,0,0,0.9)",
-              borderLeft: "3px solid #f59e0b",
-              paddingLeft: 10,
-            }}
-          >
-            {s.aiCaption}
-          </p>
-        )}
-
-        {/* ── SECONDARY: Key bullet points from original notes ── */}
-        {s.bulletPoints.length > 0 && (
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 8px", display: "flex", flexDirection: "column", gap: 4 }}>
-            {s.bulletPoints.map((bp, i) => (
-              <li
-                key={i}
-                style={{
-                  fontSize: 11,
-                  fontWeight: 600,
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 5,
-                  color: "rgba(255,255,255,0.9)",
-                  textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-                }}
-              >
-                <span style={{ color: "#f59e0b", flexShrink: 0, marginTop: 1, fontSize: 8 }}>▶</span>
-                <span>{bp}</span>
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* Brand handle */}
-        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.55, letterSpacing: "0.06em", marginTop: 4 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, marginBottom: 5 }}>
           {brandHandle}
         </div>
+
+        {/* HEADLINE (LUXURY REDEFINED in white) */}
+        {s.headline && (
+          <h2
+            style={{
+              fontSize: "clamp(18px, 5vw, 28px)",
+              lineHeight: 1.05,
+              fontWeight: 950,
+              textTransform: "uppercase",
+              marginBottom: 4,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            {s.headline}
+          </h2>
+        )}
+
+        {/* HIGHLIGHT (5BHK SERENITY in red) */}
+        {s.highlight && (
+          <div
+            style={{
+              color: "#ff3333",
+              fontSize: "clamp(14px, 4vw, 22px)",
+              fontWeight: 900,
+              textTransform: "uppercase",
+              lineHeight: 1,
+              marginBottom: 6,
+            }}
+          >
+            {s.highlight}
+          </div>
+        )}
+
+        {/* SUPPORTING TEXT (EXPERIENCE PREMIUM LIVING... in white uppercase) */}
+        {s.supporting_text && (
+          <p
+            style={{
+              fontSize: 11,
+              fontWeight: 700,
+              textTransform: "uppercase",
+              opacity: 0.85,
+              marginBottom: 8,
+              lineHeight: 1.3
+            }}
+          >
+            {s.supporting_text}
+          </p>
+        )}
       </div>
     </div>
   );

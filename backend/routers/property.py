@@ -9,6 +9,7 @@ from services.supabase_service import (
     get_user_properties,
     get_property_with_assets,
     update_property_listing,
+    delete_property_listing,
 )
 from services.groq_service import analyze_all_images, synthesize_creative_assets
 from config import get_settings
@@ -153,3 +154,13 @@ async def update_property(
         request.model_dump(exclude_unset=True)
     )
     return updated
+
+
+@router.delete("/properties/{property_id}")
+async def delete_property(
+    property_id: str,
+    current_user: dict = Depends(get_current_user),
+):
+    """Deletes a property listing and all related marketing assets and images."""
+    return await delete_property_listing(property_id, current_user["user_id"])
+

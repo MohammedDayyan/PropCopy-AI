@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import TrialBanner from "@/components/TrialBanner";
 import ResultsDashboard from "@/components/ResultsDashboard";
-import { fetchCredits, fetchProperties, fetchProperty, updateProperty } from "@/lib/api";
-import { Building2, Plus, Calendar, ChevronRight, Sparkles, LayoutGrid, Edit3, Save, X, Image as ImageIcon, Copy } from "lucide-react";
+import { fetchCredits, fetchProperties, fetchProperty, updateProperty, deleteProperty } from "@/lib/api";
+import { Building2, Plus, Calendar, ChevronRight, Sparkles, LayoutGrid, Edit3, Save, X, Image as ImageIcon, Copy, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 interface PropertyImage {
@@ -129,6 +129,32 @@ export default function Dashboard() {
     } catch (err: any) {
       console.error(err);
       toast.error(err.message || "Failed to update property", { id: toastId });
+    }
+  };
+
+  const handleDeleteProperty = async (id: string) => {
+    if (!confirm("Are you sure you want to delete this listing? This action cannot be undone.")) {
+      return;
+    }
+    const toastId = toast.loading("Deleting listing...");
+    try {
+      await deleteProperty(id);
+      
+      // Remove from list
+      const remaining = properties.filter((p) => p.id !== id);
+      setProperties(remaining);
+      
+      // Auto-select another if available
+      if (remaining.length > 0) {
+        handleSelectProperty(remaining[0]);
+      } else {
+        setSelectedProperty(null);
+      }
+      
+      toast.success("Listing deleted successfully!", { id: toastId });
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to delete listing", { id: toastId });
     }
   };
 
@@ -385,9 +411,14 @@ export default function Dashboard() {
                     </div>
 
                     {!isEditing ? (
-                      <button onClick={startEditing} className="btn-secondary" style={{ padding: "8px 16px", fontSize: "13px" }}>
-                        <Edit3 size={14} /> Edit Listing
-                      </button>
+                      <div style={{ display: "flex", gap: "8px" }}>
+                        <button onClick={startEditing} className="btn-secondary" style={{ padding: "8px 16px", fontSize: "13px" }}>
+                          <Edit3 size={14} /> Edit Listing
+                        </button>
+                        <button onClick={() => handleDeleteProperty(selectedProperty.id)} className="btn-secondary" style={{ padding: "8px 16px", fontSize: "13px", color: "var(--error, #ef4444)", borderColor: "rgba(239, 68, 68, 0.2)" }}>
+                          <Trash2 size={14} /> Delete Listing
+                        </button>
+                      </div>
                     ) : (
                       <div style={{ display: "flex", gap: "8px" }}>
                         <button onClick={() => setIsEditing(false)} className="btn-secondary" style={{ padding: "8px 16px", fontSize: "13px" }}>
