@@ -532,6 +532,7 @@ export default function Dashboard() {
                           <ResultsDashboard
                             assets={selectedProperty.marketing_assets[0]}
                             propertyImages={selectedProperty.property_images}
+                            rawBulletPoints={selectedProperty.raw_bullet_points}
                           />
                         ) : (
                           <div className="card" style={{ padding: "32px", textAlign: "center" }}>
