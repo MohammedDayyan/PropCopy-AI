@@ -101,6 +101,8 @@ export default function BillingPage() {
             loadCredits();
           } catch (verifyErr: any) {
             toast.error(verifyErr.message || "Payment verification failed", { id: verifyToastId });
+          } finally {
+            setBuying(false);
           }
         },
         modal: {
