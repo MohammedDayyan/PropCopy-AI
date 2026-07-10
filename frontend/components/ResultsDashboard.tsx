@@ -68,13 +68,15 @@ interface CoverSlide {
   kind: "cover";
   img1: string;
   img2: string;
+  img1Analysis?: string;
+  img2Analysis?: string;
 }
 interface ImageSlide {
   kind: "image";
   img: string;
-  aiCaption: string;
-  bulletPoints: string[];
-  index: number; // 1-based display index
+  aiCaption: string;      // full AI analysis of this specific image
+  bulletPoints: string[]; // relevant lines from raw notes
+  index: number;          // 1-based display index among image slides
   total: number;
 }
 interface CtaSlide {
@@ -121,28 +123,36 @@ export default function ResultsDashboard({
     const bullets = parseBulletPoints(rawBulletPoints || "");
     const result: Slide[] = [];
 
-    // Slide 0 — Cover: first 2 images
-    result.push({ kind: "cover", img1: primaryImage, img2: secondImage });
+    // Slide 0 — Cover: 2-image collage intro, with descriptions of those 2 images
+    result.push({
+      kind: "cover",
+      img1: primaryImage,
+      img2: secondImage,
+      img1Analysis: propertyImages?.[0]?.ai_analysis
+        ? truncate(propertyImages[0].ai_analysis, 90)
+        : undefined,
+      img2Analysis: propertyImages?.[1]?.ai_analysis
+        ? truncate(propertyImages[1].ai_analysis, 90)
+        : undefined,
+    });
 
-    // Remaining images (index 2 onwards)
-    const remainingImgs = imageUrls.slice(2);
-    const remainingProps = propertyImages?.slice(2) || [];
-    const totalImageSlides = remainingImgs.length;
+    // One slide per property image (all of them, not just index 2+)
+    const totalImageSlides = imageUrls.length;
+    const perSlide = Math.max(2, Math.ceil(bullets.length / Math.max(totalImageSlides, 1)));
 
-    remainingImgs.forEach((imgUrl, idx) => {
-      const propImg = remainingProps[idx];
-      // Distribute bullet points evenly across image slides
-      const perSlide = Math.max(2, Math.ceil(bullets.length / Math.max(totalImageSlides, 1)));
+    imageUrls.forEach((imgUrl, idx) => {
+      const propImg = propertyImages?.[idx];
       const start = idx * perSlide;
       result.push({
         kind: "image",
         img: imgUrl,
+        // Show the full AI vision analysis — this IS the "font describing the image"
         aiCaption: propImg?.ai_analysis
-          ? truncate(propImg.ai_analysis, 110)
+          ? truncate(propImg.ai_analysis, 200)
           : "",
         bulletPoints: bullets.slice(start, start + perSlide),
-        index: idx + 2, // display as "02, 03, ..."
-        total: totalImageSlides + 2, // cover + images + cta
+        index: idx + 1,
+        total: totalImageSlides,
       });
     });
 
@@ -621,13 +631,13 @@ function CoverSlideView({
         />
       </div>
 
-      {/* Gradient overlay */}
+      {/* Gradient overlay — stronger at bottom to fit more text */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, transparent 35%, rgba(0,0,0,0.5) 60%, #000 85%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.15) 0%, transparent 28%, rgba(0,0,0,0.55) 52%, #000 78%)",
         }}
       />
 
@@ -637,20 +647,20 @@ function CoverSlideView({
           position: "absolute",
           left: 20,
           right: 20,
-          bottom: 22,
+          bottom: 18,
           textAlign: "center",
           color: "#fff",
         }}
       >
         {logoUrl && (
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 8 }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 6 }}>
             <img
               crossOrigin="anonymous"
               src={logoUrl}
               alt="logo"
               style={{
-                width: 40,
-                height: 40,
+                width: 36,
+                height: 36,
                 borderRadius: "50%",
                 objectFit: "cover",
                 border: "2px solid rgba(255,255,255,0.8)",
@@ -658,17 +668,17 @@ function CoverSlideView({
             />
           </div>
         )}
-        <div style={{ fontSize: 11, fontWeight: 700, opacity: 0.85, marginBottom: 6 }}>
+        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.8, marginBottom: 5 }}>
           {reel?.brand_handle || "@brand"}
         </div>
         {reel?.headline && (
           <h2
             style={{
-              fontSize: "clamp(20px, 5.5vw, 32px)",
+              fontSize: "clamp(18px, 5vw, 28px)",
               lineHeight: 1,
               fontWeight: 950,
               textTransform: "uppercase",
-              marginBottom: 6,
+              marginBottom: 4,
               letterSpacing: "-0.02em",
             }}
           >
@@ -679,20 +689,70 @@ function CoverSlideView({
           <div
             style={{
               color: "#ff3333",
-              fontSize: "clamp(16px, 4.5vw, 26px)",
+              fontSize: "clamp(14px, 4vw, 22px)",
               fontWeight: 900,
               textTransform: "uppercase",
               lineHeight: 1,
-              marginBottom: 8,
+              marginBottom: 6,
             }}
           >
             {reel.highlight}
           </div>
         )}
         {reel?.supporting_text && (
-          <p style={{ fontSize: 13, fontWeight: 700, textTransform: "uppercase", opacity: 0.9 }}>
+          <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", opacity: 0.85, marginBottom: 8 }}>
             {reel.supporting_text}
           </p>
+        )}
+
+        {/* Image descriptions — what the AI sees in each of the 2 cover images */}
+        {(s.img1Analysis || s.img2Analysis) && (
+          <div
+            style={{
+              display: "flex",
+              gap: 6,
+              marginTop: 4,
+            }}
+          >
+            {s.img1Analysis && (
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: 6,
+                  padding: "5px 7px",
+                  fontSize: 9.5,
+                  lineHeight: 1.4,
+                  color: "rgba(255,255,255,0.88)",
+                  textAlign: "left",
+                  fontStyle: "italic",
+                  borderLeft: "2px solid #f59e0b",
+                }}
+              >
+                {s.img1Analysis}
+              </div>
+            )}
+            {s.img2Analysis && s.img1 !== s.img2 && (
+              <div
+                style={{
+                  flex: 1,
+                  background: "rgba(255,255,255,0.12)",
+                  backdropFilter: "blur(4px)",
+                  borderRadius: 6,
+                  padding: "5px 7px",
+                  fontSize: 9.5,
+                  lineHeight: 1.4,
+                  color: "rgba(255,255,255,0.88)",
+                  textAlign: "left",
+                  fontStyle: "italic",
+                  borderLeft: "2px solid #f59e0b",
+                }}
+              >
+                {s.img2Analysis}
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -717,85 +777,112 @@ function ImageSlideView({
         style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
       />
 
-      {/* Gradient */}
+      {/* Gradient — deeper so text is always legible */}
       <div
         style={{
           position: "absolute",
           inset: 0,
           background:
-            "linear-gradient(to bottom, rgba(0,0,0,0.08) 0%, transparent 30%, rgba(0,0,0,0.6) 58%, #000 88%)",
+            "linear-gradient(to bottom, rgba(0,0,0,0.05) 0%, transparent 22%, rgba(0,0,0,0.45) 48%, rgba(0,0,0,0.88) 72%, #000 90%)",
         }}
       />
 
-      {/* Top-left logo */}
-      {logoUrl && (
-        <div style={{ position: "absolute", top: 14, left: 14 }}>
-          <img
-            crossOrigin="anonymous"
-            src={logoUrl}
-            alt="logo"
-            style={{
-              width: 30,
-              height: 30,
-              borderRadius: "50%",
-              objectFit: "cover",
-              border: "1.5px solid rgba(255,255,255,0.7)",
-            }}
-          />
+      {/* Top row: slide counter only, top-right */}
+      <div
+        style={{
+          position: "absolute",
+          top: 14,
+          right: 14,
+        }}
+      >
+        <div
+          style={{
+            background: "rgba(0,0,0,0.5)",
+            backdropFilter: "blur(4px)",
+            borderRadius: 12,
+            padding: "3px 9px",
+            fontSize: 10,
+            fontWeight: 700,
+            color: "rgba(255,255,255,0.85)",
+          }}
+        >
+          {String(s.index).padStart(2, "0")} / {String(s.total).padStart(2, "0")}
         </div>
-      )}
+      </div>
 
       {/* Bottom content */}
       <div
         style={{
           position: "absolute",
-          left: 18,
-          right: 18,
-          bottom: 18,
+          left: 16,
+          right: 16,
+          bottom: 16,
           color: "#fff",
         }}
       >
-        {/* Bullet points */}
-        {s.bulletPoints.length > 0 && (
-          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 10px", display: "flex", flexDirection: "column", gap: 5 }}>
-            {s.bulletPoints.map((bp, i) => (
-              <li
-                key={i}
-                style={{
-                  fontSize: 12,
-                  fontWeight: 700,
-                  display: "flex",
-                  alignItems: "flex-start",
-                  gap: 6,
-                  textShadow: "0 1px 4px rgba(0,0,0,0.9)",
-                }}
-              >
-                <span style={{ color: "#f59e0b", flexShrink: 0, marginTop: 1 }}>●</span>
-                <span>{bp}</span>
-              </li>
-            ))}
-          </ul>
+        {/* ── LOGO centered above description ── */}
+        {logoUrl && (
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 10 }}>
+            <img
+              crossOrigin="anonymous"
+              src={logoUrl}
+              alt="logo"
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: "50%",
+                objectFit: "cover",
+                border: "2px solid rgba(255,255,255,0.85)",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.6)",
+              }}
+            />
+          </div>
         )}
 
-        {/* AI caption / image description */}
+        {/* ── PRIMARY: AI image description (the "font describing the image") ── */}
         {s.aiCaption && (
           <p
             style={{
-              fontSize: 11,
-              color: "rgba(255,255,255,0.75)",
-              fontStyle: "italic",
-              lineHeight: 1.45,
-              margin: "0 0 8px",
-              borderLeft: "2px solid var(--accent)",
-              paddingLeft: 8,
+              fontSize: 13,
+              fontWeight: 700,
+              lineHeight: 1.5,
+              margin: "0 0 10px",
+              color: "#fff",
+              textAlign: "center",
+              textShadow: "0 1px 6px rgba(0,0,0,0.9)",
+              borderLeft: "3px solid #f59e0b",
+              paddingLeft: 10,
             }}
           >
             {s.aiCaption}
           </p>
         )}
 
+        {/* ── SECONDARY: Key bullet points from original notes ── */}
+        {s.bulletPoints.length > 0 && (
+          <ul style={{ listStyle: "none", padding: 0, margin: "0 0 8px", display: "flex", flexDirection: "column", gap: 4 }}>
+            {s.bulletPoints.map((bp, i) => (
+              <li
+                key={i}
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 5,
+                  color: "rgba(255,255,255,0.9)",
+                  textShadow: "0 1px 4px rgba(0,0,0,0.9)",
+                }}
+              >
+                <span style={{ color: "#f59e0b", flexShrink: 0, marginTop: 1, fontSize: 8 }}>▶</span>
+                <span>{bp}</span>
+              </li>
+            ))}
+          </ul>
+        )}
+
         {/* Brand handle */}
-        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.65, letterSpacing: "0.05em" }}>
+        <div style={{ fontSize: 10, fontWeight: 700, opacity: 0.55, letterSpacing: "0.06em", marginTop: 4 }}>
           {brandHandle}
         </div>
       </div>
