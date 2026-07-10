@@ -135,7 +135,7 @@ if (logoFile) {
           </p>
         </div>
 
-        {creditsInfo && (creditsInfo.credits_remaining <= 0 || creditsInfo.trial_expired) ? (
+        {creditsInfo && creditsInfo.credits_remaining <= 0 ? (
           /* Paywall Blocker State */
           <div
             className="card accent-glow animate-fade-in-up"

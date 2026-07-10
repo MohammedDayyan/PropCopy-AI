@@ -39,7 +39,7 @@ export default function Dashboard() {
   const [loadingDetails, setLoadingDetails] = useState(false);
 
   const handleGenerateClick = (e: React.MouseEvent) => {
-    if (creditsInfo && (creditsInfo.credits_remaining <= 0 || creditsInfo.trial_expired)) {
+    if (creditsInfo && creditsInfo.credits_remaining <= 0) {
       e.preventDefault();
       toast.error("Free trial over! Please buy credits first.");
       router.push("/billing");

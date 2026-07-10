@@ -48,6 +48,9 @@ export default function TrialBanner({
   }
 
   if (trialExpired) {
+    if (creditsRemaining > 0) {
+      return null;
+    }
     return (
       <div
         style={{
