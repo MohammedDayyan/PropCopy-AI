@@ -156,7 +156,7 @@ Rules for Instagram:
   1. `headline`: A bold, premium main slogan (e.g., "LUXURY REDEFINED", "ELEGANT LIVING", "CULINARY HAVEN").
   2. `highlight`: A colored highlight subheadline (e.g., "5BHK SERENITY", "PANORAMIC VIEWS", "MODULAR KITCHEN").
   3. `supporting_text`: A punchy ad copy line (e.g., "EXPERIENCE PREMIUM LIVING WITH LUSH GREENERY", "BRIGHT AND AIRY LIVING SPACES FOR THE FAMILY").
-- Also generate the overall cover slide info ("headline", "highlight", "supporting_text") and the post "caption" (description).
+- Also generate the overall cover slide info ("headline", "highlight", "supporting_text"), the post "caption" (description), and a ready-to-forward "whatsapp_broadcast" message (a highly engaging, emojis-rich property broadcast message for brokers/agents).
 
 Return ONLY valid JSON.
 
@@ -170,6 +170,7 @@ For instagram:
     "highlight": "5BHK SERENITY",
     "supporting_text": "EXPERIENCE PREMIUM LIVING WITH LUSH GREENERY",
     "caption": "Full Instagram post description with emojis and hashtags...",
+    "whatsapp_broadcast": "🔥 EXCLUSIVE 5BHK HOME FOR SALE 🔥\n📍 Prime Location, DLF Phase 3\n\n✨ Premium Highlights:\n- Lush Greenery & Serene Water Features\n- Modern Italian Kitchen\n- Ultra-luxurious lounge\n\n📲 DM or Call now to schedule a private site visit!",
     "slides": [
       {
         "headline": "HEADLINE FOR SLIDE",

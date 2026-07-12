@@ -326,3 +326,40 @@ async def delete_property_listing(property_id: str, user_id: str) -> dict:
 
     return {"status": "success", "deleted_id": property_id}
 
+
+async def get_profile_by_whatsapp(phone_number: str) -> dict | None:
+    """Finds a user profile mapped to the given WhatsApp phone number."""
+    client = get_supabase_admin()
+    result = (
+        client.table("profiles")
+        .select("*")
+        .eq("role", f"whatsapp:{phone_number}")
+        .execute()
+    )
+    return result.data[0] if result.data else None
+
+
+async def link_whatsapp_to_email(phone_number: str, email: str) -> dict | None:
+    """Links a WhatsApp phone number to a user profile by email by storing it in the role column."""
+    client = get_supabase_admin()
+    normalized_email = email.strip().lower()
+
+    result = (
+        client.table("profiles")
+        .select("*")
+        .eq("email", normalized_email)
+        .execute()
+    )
+    if not result.data:
+        return None
+
+    profile = result.data[0]
+
+    # Update role to act as the whatsapp mapping key
+    client.table("profiles").update(
+        {"role": f"whatsapp:{phone_number}"}
+    ).eq("id", profile["id"]).execute()
+
+    return profile
+
+

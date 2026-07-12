@@ -2,7 +2,7 @@ import re
 import traceback
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
-from routers import property, payments, auth
+from routers import property, payments, auth, whatsapp
 from config import get_settings
 
 settings = get_settings()
@@ -68,6 +68,7 @@ async def cors_and_error_debug_middleware(request: Request, call_next):
 app.include_router(auth.router, prefix="/api", tags=["Auth & Credits"])
 app.include_router(property.router, prefix="/api", tags=["Property Pipeline"])
 app.include_router(payments.router, prefix="/api", tags=["Payments"])
+app.include_router(whatsapp.router, prefix="/api", tags=["WhatsApp Webhook"])
 
 
 @app.get("/")
