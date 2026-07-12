@@ -41,9 +41,19 @@ async def verify_webhook(
     hub_verify_token: str = Query(None, alias="hub.verify_token"),
 ):
     expected_token = settings.verify_token or "my_propcopy_secret_token_2026"
+    
+    # Log for debugging — visible in Render logs
+    print(f"[WhatsApp Webhook] hub_mode={hub_mode!r}")
+    print(f"[WhatsApp Webhook] received_token={hub_verify_token!r}")
+    print(f"[WhatsApp Webhook] expected_token={expected_token!r}")
+    print(f"[WhatsApp Webhook] settings.verify_token raw={settings.verify_token!r}")
+    
     if hub_mode == "subscribe" and hub_verify_token == expected_token:
         return Response(content=hub_challenge, media_type="text/plain")
-    raise HTTPException(status_code=403, detail="Verification token mismatch")
+    raise HTTPException(
+        status_code=403,
+        detail=f"Verification token mismatch. Received: '{hub_verify_token}', Expected: '{expected_token}'"
+    )
 
 
 # 2. Receive Webhook Events (POST /api/whatsapp/webhook)
